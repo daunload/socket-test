@@ -1,20 +1,29 @@
-import type { TypeHandler } from '../TypeHandler'
+import type { ValueData } from '../TypeHandler'
+export class LongData implements ValueData<bigint> {
+	value: bigint
+	static byteLength = 8
 
-export class LongData {
-	constructor(public value = 0n) {}
-}
-
-export class LongDataHandler implements TypeHandler<LongData> {
-	serialize(data: LongData): ArrayBuffer {
-		const buffer = new ArrayBuffer(8)
-		new DataView(buffer).setBigInt64(0, data.value, true)
-		return buffer
+	constructor(value = 0n) {
+		this.value = value
 	}
-	deserialize(
-		view: DataView,
+
+	fromByteArray(
+		array: ArrayBuffer,
 		offset: number,
-	): { value: LongData; readBytes: number } {
-		const value = view.getBigInt64(offset, true)
-		return { value: new LongData(value), readBytes: 8 }
+	): { value: LongData; byteLength: number } {
+		const view: DataView = new DataView(array)
+		this.value = view.getBigInt64(offset)
+
+		return {
+			value: this,
+			byteLength: LongData.byteLength,
+		}
+	}
+	setByte(view: DataView, offset: number) {
+		view.setBigInt64(offset, this.value)
+		return { byteLength: LongData.byteLength }
+	}
+	getByteLength() {
+		return LongData.byteLength
 	}
 }

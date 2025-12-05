@@ -1,22 +1,30 @@
-import type { TypeHandler } from '../TypeHandler'
+import type { TypeHandler, ValueData } from '../TypeHandler'
 
-export class DoubleData {
-	constructor(public value = 0) {}
-}
+export class DoubleData implements ValueData<number> {
+	value: number
+	static byteLength = 8
 
-export class DoubleDataHandler implements TypeHandler<DoubleData> {
-	serialize(data: DoubleData): ArrayBuffer {
-		const buffer = new ArrayBuffer(1)
-		const view = new DataView(buffer)
-		view.setUint8(0, data.value ? 1 : 0)
-
-		return buffer
+	constructor(value = 0) {
+		this.value = value
 	}
-	deserialize(
-		view: DataView,
+
+	fromByteArray(
+		array: ArrayBuffer,
 		offset: number,
-	): { value: DoubleData; readBytes: number } {
-		const value = view.getFloat64(offset, true)
-		return { value: new DoubleData(value), readBytes: 8 }
+	): { value: DoubleData; byteLength: number } {
+		const view: DataView = new DataView(array)
+		this.value = view.getFloat64(offset)
+
+		return {
+			value: this,
+			byteLength: DoubleData.byteLength,
+		}
+	}
+	setByte(view: DataView, offset: number) {
+		view.setFloat64(offset, this.value)
+		return { byteLength: DoubleData.byteLength }
+	}
+	getByteLength() {
+		return DoubleData.byteLength
 	}
 }

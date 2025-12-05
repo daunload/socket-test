@@ -1,20 +1,30 @@
-import { TypeHandler } from '../TypeHandler'
+import type { ValueData } from '../TypeHandler'
 
-export class IntData {
-	constructor(public value: number = 0) {}
-}
+export class IntData implements ValueData<number> {
+	value: number
+	static byteLength = 4
 
-export class IntDataHandler implements TypeHandler<IntData> {
-	serialize(data: IntData): ArrayBuffer {
-		const buffer = new ArrayBuffer(4)
-		new DataView(buffer).setInt32(0, data.value, true)
-		return buffer
+	constructor(value = 0) {
+		this.value = value
 	}
-	deserialize(
-		view: DataView,
+
+	fromByteArray(
+		array: ArrayBuffer,
 		offset: number,
-	): { value: IntData; readBytes: number } {
-		const value = view.getInt32(offset, true)
-		return { value: new IntData(value), readBytes: 4 }
+	): { value: IntData; byteLength: number } {
+		const view: DataView = new DataView(array)
+		this.value = view.getInt32(offset)
+
+		return {
+			value: this,
+			byteLength: IntData.byteLength,
+		}
+	}
+	setByte(view: DataView, offset: number) {
+		view.setInt32(offset, this.value)
+		return { byteLength: IntData.byteLength }
+	}
+	getByteLength() {
+		return IntData.byteLength
 	}
 }

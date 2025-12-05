@@ -1,29 +1,45 @@
-import type { TypeHandler } from '../TypeHandler'
+import type { ValueData } from '../TypeHandler'
 
-export class StringData {
-	constructor(public value: string = '') {}
-}
+const textDecoder = new TextDecoder()
+const textEncoder = new TextEncoder()
+export class StringData implements ValueData<string> {
+	value: string
 
-export class StringDataHandler implements TypeHandler<StringData> {
-	private encoder = new TextEncoder()
-	private decoder = new TextDecoder()
-
-	serialize(data: StringData): ArrayBuffer {
-		const strBytes = this.encoder.encode(data.value)
-		const buffer = new ArrayBuffer(4 + strBytes.length)
-		const view = new DataView(buffer)
-		view.setUint32(0, strBytes.length, true)
-		new Uint8Array(buffer, 4).set(strBytes)
-		return buffer
+	constructor(value = '') {
+		this.value = value
 	}
-	deserialize(
-		view: DataView,
+
+	fromByteArray(
+		array: ArrayBuffer,
 		offset: number,
-	): { value: StringData; readBytes: number } {
-		const length = view.getInt32(offset)
+	): { value: StringData; byteLength: number } {
+		const view: DataView = new DataView(array)
+		const startOffset = offset
+		const byteLength = view.getInt32(offset)
 		offset += 4
-		const strBytes = new Uint8Array(view.buffer, offset, length)
-		const value = this.decoder.decode(strBytes)
-		return { value: new StringData(value), readBytes: 4 + length }
+
+		const string =
+			'' + textDecoder.decode(new DataView(array, offset, byteLength))
+		offset += byteLength
+		this.value = string
+		return {
+			value: this,
+			byteLength: offset - startOffset,
+		}
+	}
+	setByte(view: DataView, offset: number) {
+		const uint8string = textEncoder.encode(this.value)
+
+		for (let i = 0; i < uint8string.byteLength; i++) {
+			view.setInt8(offset + i, uint8string[i])
+		}
+		return { byteLength: uint8string.byteLength }
+	}
+	getByteLength() {
+		let length = 0
+		for (let i = 0; i < this.value.length; i++) {
+			length += this.value.charCodeAt(i) > 127 ? 3 : 1
+		}
+		return length
 	}
 }

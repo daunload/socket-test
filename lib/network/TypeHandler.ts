@@ -31,3 +31,14 @@ export class DataTypeManager {
 		return this.handlers.get(typeConstructor)
 	}
 }
+
+export interface ValueData<T> {
+	value: T
+
+	fromByteArray(
+		buffer: ArrayBuffer,
+		offset: number,
+	): { value: ValueData<T>; byteLength: number }
+	setByte(view: DataView, offset: number): { byteLength: number }
+	getByteLength(): number
+}
